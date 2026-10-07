@@ -6,6 +6,7 @@ pydantic-settings>=2.2.0
 python-dotenv>=1.0.0
 sqlalchemy>=2.0.25
 asyncpg>=0.29.0
+greenlet>=3.0.0
 alembic>=1.13.0
 twilio>=9.0.0
 openai>=1.20.0
