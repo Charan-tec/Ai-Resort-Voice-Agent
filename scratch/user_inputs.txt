@@ -1,0 +1,315 @@
+================ USER INPUT ================
+<USER_REQUEST>
+Update the EXISTING Azure Paradise Resort dashboard.
+
+IMPORTANT:
+Do NOT rebuild the dashboard.
+Do NOT modify or break the existing backend, booking system, RAG, voice agent, WebSocket, database, or APIs.
+
+I only want TWO customer-facing frontend features added:
+
+1. INTERNATIONAL CURRENCY / COUNTRY SELECTOR
+2. AI CONCIERGE CHAT BAR
+
+==================================================
+1. INTERNATIONAL COUNTRY & CURRENCY
+==================================================
+
+Add a premium Country + Currency selector to the dashboard navbar.
+
+Default behavior:
+- Detect the user's approximate country.
+- Automatically select an appropriate local currency.
+- Allow the user to manually change it at any time.
+
+Examples:
+
+🇮🇳 India → INR ₹
+🇺🇸 United States → USD $
+🇬🇧 United Kingdom → GBP £
+🇪🇺 Europe → EUR €
+🇦🇪 UAE → AED
+🇸🇬 Singapore → SGD
+🇦🇺 Australia → AUD
+🇨🇦 Canada → CAD
+🇯🇵 Japan → JPY ¥
+
+Navbar example:
+
+🇮🇳 India · INR ▾
+
+When clicked, show:
+
+Select Country & Currency
+
+🇮🇳 India              INR ₹
+🇺🇸 United States      USD $
+🇬🇧 United Kingdom     GBP £
+🇪🇺 Europe             EUR €
+🇦🇪 UAE                AED
+🇸🇬 Singapore          SGD
+🇦🇺 Australia          AUD
+🇨🇦 Canada             CAD
+🇯🇵 Japan              JPY ¥
+
+Add country search.
+
+==================================================
+2. CURRENCY CONVERSION
+==================================================
+
+The resort's BASE/CANONICAL currency is USD.
+
+Do NOT change the backend booking prices.
+
+Only convert prices for customer display.
+
+Example:
+
+Base:
+Oceanfront Luxury Villa
+$650 / night
+
+If user selects India:
+
+₹XX,XXX / night
+≈ USD 650
+
+If user selects UK:
+
+£XXX / night
+≈ USD 650
+
+Use a reliable LIVE exchange-rate source/API.
+
+DO NOT hardcode exchange rates.
+
+DO NOT invent exchange rates.
+
+If exchange-rate service fails:
+con
+<truncated 5287 bytes>
+tinue running in the backend,
+but they must NOT be visible to customers.
+
+==================================================
+15. FINAL TEST
+==================================================
+
+After implementation verify:
+
+Currency:
+✓ India → INR
+✓ USA → USD
+✓ UK → GBP
+✓ UAE → AED
+✓ Japan → JPY
+✓ Manual currency change
+✓ Currency persists after refresh
+✓ Room prices update
+✓ Booking total updates
+✓ My Booking updates
+
+Chat:
+✓ Chat opens
+✓ Chat closes
+✓ Text messages work
+✓ Existing AI backend is connected
+✓ Room search works
+✓ Availability works
+✓ Pricing works
+✓ Booking works
+✓ My Booking works
+✓ Voice/microphone button connects to existing voice functionality
+✓ Selected currency is reflected in chat responses
+
+Do not modify existing backend functionality.
+
+Implement these two features directly into the existing dashboard and
+keep the entire existing application working.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-10-07T11:07:26+05:30.
+
+The user's current state is as follows:
+Active Document: c:\Users\Bhavyasree\Desktop\voice agent\app\telephony\websocket.py (LANGUAGE_PYTHON)
+Cursor is on line: 18
+Other open documents:
+- c:\Users\Bhavyasree\Desktop\voice agent\tests\unit\test_sentence_chunker.py (LANGUAGE_PYTHON)
+- c:\Users\Bhavyasree\Desktop\voice agent\tests\conftest.py (LANGUAGE_PYTHON)
+- c:\Users\Bhavyasree\Desktop\voice agent\frontend\src\components\RoomPricingCard.jsx (LANGUAGE_JAVASCRIPT)
+- c:\Users\Bhavyasree\Desktop\voice agent\tests\unit\test_media_stream_websocket.py (LANGUAGE_PYTHON)
+- c:\Users\Bhavyasree\Desktop\voice agent\tests\unit\test_telephony_readiness.py (LANGUAGE_PYTHON)
+</ADDITIONAL_METADATA>
+<USER_SETTINGS_CHANGE>
+The user changed setting `Model Selection` from None to Gemini 3.8 Flash (High). No need to comment on this change if the user doesn't ask about it. If reporting what model you are, please use a human readable name instead of the exact string.
+</USER_SETTINGS_CHANGE>
+================ USER INPUT ================
+<USER_REQUEST>
+VOICE PIPELINE ROOT-CAUSE AUDIT — DO NOT REBUILD ANYTHING
+
+My frontend features are now complete, including:
+
+- International Country & Currency Selector
+- AI Concierge Floating Chat
+- Existing BrowserVoiceManager integration
+- Existing WebSocket voice integration
+- Existing AI backend
+- Existing RAG
+- Existing booking system
+
+DO NOT add new UI features.
+
+DO NOT redesign anything.
+
+DO NOT modify currency functionality.
+
+DO NOT modify booking/database/RAG logic unless the audit proves it is
+the root cause.
+
+My current critical problem is:
+
+When I speak to the voice agent, the system sometimes does not correctly
+understand my current speech and may repeat a previous message or return
+an incorrect response.
+
+I need you to FIND THE EXACT ROOT CAUSE.
+
+==================================================
+TRACE ONE REAL VOICE TURN
+==================================================
+
+For every user speech turn, log:
+
+TURN_ID
+RAW_ASSEMBLYAI_TRANSCRIPT
+FINAL_ASSEMBLYAI_TRANSCRIPT
+NORMALIZED_USER_INPUT
+TURN_MANAGER_INPUT
+SESSION_STATE
+ORCHESTRATOR_INPUT
+LLM_INPUT
+LLM_OUTPUT
+FINAL_RESPONSE
+TTS_INPUT
+
+Use one unique TURN_ID per user utterance.
+
+==================================================
+CRITICAL DUPLICATION CHECK
+==================================================
+
+Verify that one spoken sentence produces exactly:
+
+1 FINAL STT transcript
+1 orchestrator turn
+1 LLM decision
+1 final response
+1 TTS generation
+
+Check whether:
+
+- AssemblyAI final transcript is emitted twice
+- interim transcript is treated as final
+- old transcript is reused
+- transcript buffer is not cleared
+- TurnManager processes the same turn twice
+- previous assistant response becomes the next user input
+- previous audio is replayed
+- previous TTS task is not cancelled
+- WebSocket messages are duplicated
+
+==================================================
+TEST WITH THESE EXACT VOICE INPUTS
+==================================================
+
+Test 1:
+"Hello"
+
+Test
+<truncated 1955 bytes>
+
+
+==================================================
+CHECK BROWSER AUDIO
+==================================================
+
+Inspect BrowserVoiceManager and BrowserOutboundPacer.
+
+Determine whether the problem is:
+
+A. STT/input problem
+B. LLM/context problem
+C. TTS/output problem
+D. duplicate WebSocket event
+E. stale session state
+F. Gemini fallback
+G. combination of the above
+
+Do not change code until the exact cause is identified.
+
+==================================================
+ONLY AFTER ROOT CAUSE IS FOUND
+==================================================
+
+Apply the smallest possible fix.
+
+Do not rewrite the architecture.
+
+Then rerun:
+
+- unit tests
+- integration tests
+- WebSocket tests
+- browser voice tests
+- real voice conversation tests
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return exactly:
+
+ROOT CAUSE:
+BROKEN FILE:
+BROKEN FUNCTION:
+WHY IT HAPPENS:
+FIX APPLIED:
+TESTS PASSED:
+REAL VOICE TEST RESULT:
+
+Also provide one complete successful trace:
+
+USER SPEECH
+→ FINAL STT
+→ ORCHESTRATOR
+→ LLM
+→ TOOL/RAG if required
+→ FINAL RESPONSE
+→ TTS
+
+The final requirement is:
+
+ONE USER SPEECH
+→ ONE CORRECT TRANSCRIPT
+→ ONE CORRECT AI RESPONSE
+→ ONE CORRECT AUDIO RESPONSE
+
+No repetition.
+No stale input.
+No stale response.
+No random answers.
+No unnecessary clarification when the required information was already
+provided.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-10-07T12:15:58+05:30.
+
+The user's current state is as follows:
+Active Document: c:\Users\Bhavyasree\Desktop\voice agent\app\telephony\websocket.py (LANGUAGE_PYTHON)
+Cursor is on line: 22
+Other open documents:
+- c:\Users\Bhavyasree\Desktop\voice agent\app\llm\openai.py (LANGUAGE_PYTHON)
+- c:\Users\Bhavyasree\Desktop\voice agent\app\telephony\websocket.py (LANGUAGE_PYTHON)
+- c:\Users\Bhavyasree\Desktop\voice agent\app\stt\factory.py (LANGUAGE_PYTHON)
+</ADDITIONAL_METADATA>

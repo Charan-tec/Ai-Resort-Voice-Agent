@@ -1,0 +1,27 @@
+# Virtual environments & Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+*.env
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local PostgreSQL portable binaries & data
+.pg16/
+data_pg/
+data/chroma_db/
+
+# Local environment overrides
+.env.*.local
+
+# Frontend build & dependencies
+frontend/node_modules/
+frontend/dist/
+
+# IDE & OS
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini

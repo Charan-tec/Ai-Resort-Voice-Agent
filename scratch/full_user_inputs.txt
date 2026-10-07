@@ -1,0 +1,655 @@
+================ USER INPUT ================
+<USER_REQUEST>
+Update the EXISTING Azure Paradise Resort dashboard.
+
+IMPORTANT:
+Do NOT rebuild the dashboard.
+Do NOT modify or break the existing backend, booking system, RAG, voice agent, WebSocket, database, or APIs.
+
+I only want TWO customer-facing frontend features added:
+
+1. INTERNATIONAL CURRENCY / COUNTRY SELECTOR
+2. AI CONCIERGE CHAT BAR
+
+==================================================
+1. INTERNATIONAL COUNTRY & CURRENCY
+==================================================
+
+Add a premium Country + Currency selector to the dashboard navbar.
+
+Default behavior:
+- Detect the user's approximate country.
+- Automatically select an appropriate local currency.
+- Allow the user to manually change it at any time.
+
+Examples:
+
+🇮🇳 India → INR ₹
+🇺🇸 United States → USD $
+🇬🇧 United Kingdom → GBP £
+🇪🇺 Europe → EUR €
+🇦🇪 UAE → AED
+🇸🇬 Singapore → SGD
+🇦🇺 Australia → AUD
+🇨🇦 Canada → CAD
+🇯🇵 Japan → JPY ¥
+
+Navbar example:
+
+🇮🇳 India · INR ▾
+
+When clicked, show:
+
+Select Country & Currency
+
+🇮🇳 India              INR ₹
+🇺🇸 United States      USD $
+🇬🇧 United Kingdom     GBP £
+🇪🇺 Europe             EUR €
+🇦🇪 UAE                AED
+🇸🇬 Singapore          SGD
+🇦🇺 Australia          AUD
+🇨🇦 Canada             CAD
+🇯🇵 Japan              JPY ¥
+
+Add country search.
+
+==================================================
+2. CURRENCY CONVERSION
+==================================================
+
+The resort's BASE/CANONICAL currency is USD.
+
+Do NOT change the backend booking prices.
+
+Only convert prices for customer display.
+
+Example:
+
+Base:
+Oceanfront Luxury Villa
+$650 / night
+
+If user selects India:
+
+₹XX,XXX / night
+≈ USD 650
+
+If user selects UK:
+
+£XXX / night
+≈ USD 650
+
+Use a reliable LIVE exchange-rate source/API.
+
+DO NOT hardcode exchange rates.
+
+DO NOT invent exchange rates.
+
+If exchange-rate service fails:
+continue showing USD and display:
+
+"Local currency conversion temporarily unavailable."
+
+==================================================
+3. APPLY CURRENCY EVERYWHERE
+==================================================
+
+The selected currency must consistently update:
+
+- Room prices
+- Nightly prices
+- Subtotal
+- Resort fee
+- Taxes
+- Add-ons
+- Total price
+- Booking summary
+- My Booking
+- Room cards
+- AI Concierge chat responses where applicable
+
+Keep the original backend amount in USD.
+
+Frontend should maintain:
+
+originalAmount
+originalCurrency = "USD"
+
+and separately:
+
+displayAmount
+displayCurrency = selected currency
+
+Never send converted display values to the booking backend as the
+original booking price.
+
+==================================================
+4. SAVE USER CURRENCY
+==================================================
+
+If the user manually selects a currency:
+
+- remember the selection using localStorage or existing preference state
+- preserve it after page refresh
+- do not automatically overwrite the user's manual choice
+
+==================================================
+5. AI CONCIERGE CHAT BAR
+==================================================
+
+Add a floating AI Concierge chat bar at the bottom-right.
+
+Collapsed state:
+
+✨ AI Concierge
+Ask us anything
+
+When clicked, open a premium floating chat window.
+
+Header:
+
+✨ Azure Paradise AI Concierge
+● Online
+
+Subtitle:
+
+Your personal resort assistant
+
+==================================================
+6. CHAT QUICK ACTIONS
+==================================================
+
+Inside the chat show:
+
+[ Find a Room ]
+[ Check Availability ]
+[ Check Pricing ]
+[ Dining ]
+[ Resort Experiences ]
+[ My Booking ]
+
+==================================================
+7. CHAT INPUT
+==================================================
+
+At the bottom:
+
+🎤   Ask anything about your stay...        ➤
+
+Support:
+
+- text input
+- send button
+- microphone button
+- existing browser voice functionality
+
+Connect the chat to the EXISTING AI backend.
+
+DO NOT create a fake chatbot.
+
+DO NOT create dummy responses.
+
+Use the existing AI/RAG/booking functionality.
+
+==================================================
+8. CHAT EXAMPLES
+==================================================
+
+The user should be able to ask:
+
+"I need a room for two guests."
+
+"What rooms are available from November 21 to 26?"
+
+"Which room is cheapest?"
+
+"How much does the Oceanfront Villa cost?"
+
+"Book the cheapest room."
+
+"What time is breakfast?"
+
+"Tell me about the spa."
+
+"Can you show my booking?"
+
+The existing backend should handle these requests.
+
+==================================================
+9. ROOM RESULTS IN CHAT
+==================================================
+
+When rooms are found, display beautiful mini room cards.
+
+Example:
+
+[Room Image]
+
+Garden Tropical Bungalow
+
+Up to 3 Guests
+
+₹XX,XXX / night
+≈ USD 290
+
+[View Room] [Book This]
+
+Use the existing room/booking data.
+
+Do NOT create fake room availability.
+
+==================================================
+10. CHAT + CURRENCY INTEGRATION
+==================================================
+
+The chat must use the SAME currency selected in the dashboard.
+
+Example:
+
+User selected:
+🇮🇳 India · INR
+
+User asks:
+"How much is the Garden Tropical Bungalow?"
+
+AI response:
+
+Garden Tropical Bungalow is
+₹XX,XXX per night
+(approximately USD 290).
+
+Do NOT create a separate currency system inside the chat.
+
+==================================================
+11. BOOKING CONFIRMATION IN CHAT
+==================================================
+
+After an actual booking is confirmed, show:
+
+✓ Booking Confirmed
+
+Garden Tropical Bungalow
+Nov 21 – Nov 26
+2 Guests
+
+Total:
+₹XX,XXX
+≈ USD XXXX
+
+Confirmation:
+RES-XXXXXXXX
+
+[ View My Booking ]
+
+Use the REAL booking confirmation returned by the backend.
+
+Never generate fake confirmation numbers.
+
+==================================================
+12. DESIGN
+==================================================
+
+Both features must match the existing Azure Paradise Resort design.
+
+Use:
+
+- premium tropical resort style
+- deep ocean teal
+- azure blue
+- subtle luxury gold
+- glassmorphism
+- soft shadows
+- rounded corners
+- elegant typography
+- smooth animations
+
+Currency selector:
+small, clean and premium.
+
+Chat bar:
+floating, elegant and unobtrusive.
+
+Do NOT make either feature look like an admin panel.
+
+==================================================
+13. MOBILE RESPONSIVENESS
+==================================================
+
+Currency selector:
+- responsive
+- usable on mobile
+
+Chat:
+- floating button on mobile
+- expand to a near-full-screen chat window
+- input remains accessible above keyboard
+
+==================================================
+14. DO NOT SHOW TECHNICAL INFORMATION
+==================================================
+
+Never expose:
+
+- Gemini
+- AssemblyAI
+- ElevenLabs
+- PostgreSQL
+- Chroma
+- API keys
+- API endpoints
+- RAG internals
+- tool execution
+- debug logs
+- WebSocket information
+- backend errors
+
+These systems must continue running in the backend,
+but they must NOT be visible to customers.
+
+==================================================
+15. FINAL TEST
+==================================================
+
+After implementation verify:
+
+Currency:
+✓ India → INR
+✓ USA → USD
+✓ UK → GBP
+✓ UAE → AED
+✓ Japan → JPY
+✓ Manual currency change
+✓ Currency persists after refresh
+✓ Room prices update
+✓ Booking total updates
+✓ My Booking updates
+
+Chat:
+✓ Chat opens
+✓ Chat closes
+✓ Text messages work
+✓ Existing AI backend is connected
+✓ Room search works
+✓ Availability works
+✓ Pricing works
+✓ Booking works
+✓ My Booking works
+✓ Voice/microphone button connects to existing voice functionality
+✓ Selected currency is reflected in chat responses
+
+Do not modify existing backend functionality.
+
+Implement these two features directly into the existing dashboard and
+keep the entire existing application working.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-10-07T11:07:26+05:30.
+
+The user's current state is as follows:
+Active Document: c:\Users\Bhavyasree\Desktop\voice agent\app\telephony\websocket.py (LANGUAGE_PYTHON)
+Cursor is on line: 18
+Other open documents:
+- c:\Users\Bhavyasree\Desktop\voice agent\tests\unit\test_sentence_chunker.py (LANGUAGE_PYTHON)
+- c:\Users\Bhavyasree\Desktop\voice agent\tests\conftest.py (LANGUAGE_PYTHON)
+- c:\Users\Bhavyasree\Desktop\voice agent\frontend\src\components\RoomPricingCard.jsx (LANGUAGE_JAVASCRIPT)
+- c:\Users\Bhavyasree\Desktop\voice agent\tests\unit\test_media_stream_websocket.py (LANGUAGE_PYTHON)
+- c:\Users\Bhavyasree\Desktop\voice agent\tests\unit\test_telephony_readiness.py (LANGUAGE_PYTHON)
+</ADDITIONAL_METADATA>
+<USER_SETTINGS_CHANGE>
+The user changed setting `Model Selection` from None to Gemini 3.8 Flash (High). No need to comment on this change if the user doesn't ask about it. If reporting what model you are, please use a human readable name instead of the exact string.
+</USER_SETTINGS_CHANGE>
+================ USER INPUT ================
+<USER_REQUEST>
+VOICE PIPELINE ROOT-CAUSE AUDIT — DO NOT REBUILD ANYTHING
+
+My frontend features are now complete, including:
+
+- International Country & Currency Selector
+- AI Concierge Floating Chat
+- Existing BrowserVoiceManager integration
+- Existing WebSocket voice integration
+- Existing AI backend
+- Existing RAG
+- Existing booking system
+
+DO NOT add new UI features.
+
+DO NOT redesign anything.
+
+DO NOT modify currency functionality.
+
+DO NOT modify booking/database/RAG logic unless the audit proves it is
+the root cause.
+
+My current critical problem is:
+
+When I speak to the voice agent, the system sometimes does not correctly
+understand my current speech and may repeat a previous message or return
+an incorrect response.
+
+I need you to FIND THE EXACT ROOT CAUSE.
+
+==================================================
+TRACE ONE REAL VOICE TURN
+==================================================
+
+For every user speech turn, log:
+
+TURN_ID
+RAW_ASSEMBLYAI_TRANSCRIPT
+FINAL_ASSEMBLYAI_TRANSCRIPT
+NORMALIZED_USER_INPUT
+TURN_MANAGER_INPUT
+SESSION_STATE
+ORCHESTRATOR_INPUT
+LLM_INPUT
+LLM_OUTPUT
+FINAL_RESPONSE
+TTS_INPUT
+
+Use one unique TURN_ID per user utterance.
+
+==================================================
+CRITICAL DUPLICATION CHECK
+==================================================
+
+Verify that one spoken sentence produces exactly:
+
+1 FINAL STT transcript
+1 orchestrator turn
+1 LLM decision
+1 final response
+1 TTS generation
+
+Check whether:
+
+- AssemblyAI final transcript is emitted twice
+- interim transcript is treated as final
+- old transcript is reused
+- transcript buffer is not cleared
+- TurnManager processes the same turn twice
+- previous assistant response becomes the next user input
+- previous audio is replayed
+- previous TTS task is not cancelled
+- WebSocket messages are duplicated
+
+==================================================
+TEST WITH THESE EXACT VOICE INPUTS
+==================================================
+
+Test 1:
+"Hello"
+
+Test 2:
+"I need a room for two guests from November twenty first to
+November twenty sixth."
+
+Test 3:
+"Which one is the cheapest?"
+
+Test 4:
+"How much does it cost?"
+
+Test 5:
+"Book that one."
+
+Test 6:
+"How much is my booking?"
+
+Test 7:
+"What time is breakfast?"
+
+Test 8:
+"Do you have an infinity pool?"
+
+For every test print:
+
+EXPECTED INPUT:
+ACTUAL FINAL TRANSCRIPT:
+ORCHESTRATOR INPUT:
+LLM INPUT:
+FINAL RESPONSE:
+TTS INPUT:
+
+==================================================
+CHECK GEMINI FALLBACK
+==================================================
+
+Determine whether the response is coming from:
+
+REAL GEMINI
+or
+SIMULATION/FALLBACK
+
+If fallback is used, print the exact reason.
+
+Do not silently switch between real Gemini and simulation.
+
+If Gemini returns 429/quota/timeout/authentication errors, show the exact
+error internally in logs and identify it clearly.
+
+Do not expose these errors to customers.
+
+==================================================
+CHECK CHAT BAR VS VOICE PATH
+==================================================
+
+The AI Concierge chat currently uses:
+
+/api/demo/simulate-turn
+
+and BrowserVoiceManager/WebSocket for voice.
+
+Verify whether these paths share the same:
+
+- session state
+- conversation history
+- selected room
+- dates
+- guests
+- confirmed booking
+- current intent
+
+Make sure the chat bar cannot accidentally overwrite the voice
+conversation state with stale data.
+
+==================================================
+CHECK SESSION RESET
+==================================================
+
+When a new voice session starts, verify that:
+
+- old transcripts are cleared
+- old audio queues are cleared
+- old TTS tasks are cancelled
+- old LLM streams are cancelled
+- old TurnManager state is cleared
+- old conversation state is intentionally preserved or reset according
+  to the existing design
+
+Do not delete database bookings or RAG data.
+
+==================================================
+CHECK BROWSER AUDIO
+==================================================
+
+Inspect BrowserVoiceManager and BrowserOutboundPacer.
+
+Determine whether the problem is:
+
+A. STT/input problem
+B. LLM/context problem
+C. TTS/output problem
+D. duplicate WebSocket event
+E. stale session state
+F. Gemini fallback
+G. combination of the above
+
+Do not change code until the exact cause is identified.
+
+==================================================
+ONLY AFTER ROOT CAUSE IS FOUND
+==================================================
+
+Apply the smallest possible fix.
+
+Do not rewrite the architecture.
+
+Then rerun:
+
+- unit tests
+- integration tests
+- WebSocket tests
+- browser voice tests
+- real voice conversation tests
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return exactly:
+
+ROOT CAUSE:
+BROKEN FILE:
+BROKEN FUNCTION:
+WHY IT HAPPENS:
+FIX APPLIED:
+TESTS PASSED:
+REAL VOICE TEST RESULT:
+
+Also provide one complete successful trace:
+
+USER SPEECH
+→ FINAL STT
+→ ORCHESTRATOR
+→ LLM
+→ TOOL/RAG if required
+→ FINAL RESPONSE
+→ TTS
+
+The final requirement is:
+
+ONE USER SPEECH
+→ ONE CORRECT TRANSCRIPT
+→ ONE CORRECT AI RESPONSE
+→ ONE CORRECT AUDIO RESPONSE
+
+No repetition.
+No stale input.
+No stale response.
+No random answers.
+No unnecessary clarification when the required information was already
+provided.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-10-07T12:15:58+05:30.
+
+The user's current state is as follows:
+Active Document: c:\Users\Bhavyasree\Desktop\voice agent\app\telephony\websocket.py (LANGUAGE_PYTHON)
+Cursor is on line: 22
+Other open documents:
+- c:\Users\Bhavyasree\Desktop\voice agent\app\llm\openai.py (LANGUAGE_PYTHON)
+- c:\Users\Bhavyasree\Desktop\voice agent\app\telephony\websocket.py (LANGUAGE_PYTHON)
+- c:\Users\Bhavyasree\Desktop\voice agent\app\stt\factory.py (LANGUAGE_PYTHON)
+</ADDITIONAL_METADATA>

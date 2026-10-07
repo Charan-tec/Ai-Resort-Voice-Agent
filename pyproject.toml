@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "resort-voice-agent"
+version = "1.0.0"
+description = "Production-grade, low-latency, real-time voice-to-voice telephony AI Voice Agent for Resort"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "Resort AI Team", email = "engineering@resort.ai" }
+]
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.28.0",
+    "websockets>=12.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "python-dotenv>=1.0.0",
+    "sqlalchemy>=2.0.25",
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.0",
+    "twilio>=9.0.0",
+    "openai>=1.20.0",
+    "elevenlabs>=1.0.0",
+    "sendgrid>=6.11.0",
+    "langchain>=0.1.14",
+    "langchain-community>=0.0.31",
+    "langchain-core>=0.1.38",
+    "langchain-openai>=0.1.1",
+    "langchain-text-splitters>=0.0.1",
+    "chromadb>=0.4.24",
+    "faiss-cpu>=1.8.0",
+    "numpy>=1.26.0",
+    "httpx>=0.27.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-mock>=3.12.0",
+    "ruff>=0.3.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = [
+    "postgres: marks tests requiring a real PostgreSQL database with btree_gist",
+    "e2e: marks end-to-end integration tests",
+]
+filterwarnings = [
+    "ignore:.*langchain-community.*:DeprecationWarning",
+    "ignore::DeprecationWarning:langchain_community.*",
+    "ignore::DeprecationWarning:dateutil.*",
+    "ignore:.*Using `httpx` with `starlette.testclient`.*",
+]
+
+
+
