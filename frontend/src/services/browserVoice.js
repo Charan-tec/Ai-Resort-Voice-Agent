@@ -1,13 +1,21 @@
 // Production-Quality Browser Voice Service for Azure Paradise Resort AI Voice Agent
 // Manages getUserMedia, Web Audio API streaming, real-time barge-in, Web Speech API fallback, and WebSocket transport
 
+const PROD_BROWSER_VOICE_WS = 'wss://ai-resort-voice-agent.onrender.com/ws/browser-voice';
+
 const getBrowserVoiceWsUrl = () => {
   if (typeof window === 'undefined') return 'ws://localhost:8000/ws/browser-voice';
-  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  if (window.location.port === '5173') {
+  // Local development
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     return 'ws://localhost:8000/ws/browser-voice';
   }
-  return `${proto}//${window.location.host}/ws/browser-voice`;
+  // If frontend is hosted directly on the Render backend
+  if (window.location.host.includes('onrender.com')) {
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${proto}//${window.location.host}/ws/browser-voice`;
+  }
+  // Production Vercel frontend or other external hosts
+  return PROD_BROWSER_VOICE_WS;
 };
 
 export class BrowserVoiceManager {

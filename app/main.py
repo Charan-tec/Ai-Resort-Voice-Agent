@@ -42,6 +42,8 @@ app = FastAPI(
 # CORS Configuration
 # In production and per W3C specification, wildcard ('*') origins must NEVER be paired with allow_credentials=True.
 cors_origins = [o.strip() for o in settings.ALLOWED_ORIGINS if o.strip()]
+if "https://ai-resort-voice-agent.vercel.app" not in cors_origins:
+    cors_origins.append("https://ai-resort-voice-agent.vercel.app")
 has_wildcard = "*" in cors_origins
 
 # Wildcard origins are not used with credentials. Credentials only enabled for explicit, non-wildcard origins.

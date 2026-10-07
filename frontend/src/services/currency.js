@@ -146,7 +146,9 @@ export async function initExchangeRates() {
 
   // 3. Fallback to backend /api/pricing/currencies endpoint
   try {
-    const baseUrl = typeof window !== 'undefined' && window.location.port === '5173' ? 'http://localhost:8000' : '';
+    const baseUrl = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:8000'
+      : (typeof window !== 'undefined' && window.location.origin.includes('onrender.com') ? window.location.origin : 'https://ai-resort-voice-agent.onrender.com');
     const res = await fetch(`${baseUrl}/api/pricing/currencies`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();

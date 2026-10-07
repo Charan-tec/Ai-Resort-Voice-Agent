@@ -1,21 +1,32 @@
 // API client & WebSocket connector for Resort AI Voice Agent backend
 
+const PROD_BACKEND_HTTP = 'https://ai-resort-voice-agent.onrender.com';
+const PROD_BACKEND_WSS = 'wss://ai-resort-voice-agent.onrender.com';
+
 const getBaseUrl = () => {
   if (typeof window === 'undefined') return 'http://localhost:8000';
-  // If Vite dev server, use backend directly or via proxy
-  if (window.location.port === '5173') {
+  // Local development
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     return 'http://localhost:8000';
   }
-  return window.location.origin;
+  // If frontend is hosted directly on the Render backend
+  if (window.location.origin.includes('onrender.com')) {
+    return window.location.origin;
+  }
+  // Production Vercel frontend or other external hosts
+  return PROD_BACKEND_HTTP;
 };
 
 const getWebSocketUrl = () => {
   if (typeof window === 'undefined') return 'ws://localhost:8000/ws/media-stream?mode=dashboard';
-  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  if (window.location.port === '5173') {
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     return 'ws://localhost:8000/ws/media-stream?mode=dashboard';
   }
-  return `${proto}//${window.location.host}/ws/media-stream?mode=dashboard`;
+  if (window.location.host.includes('onrender.com')) {
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${proto}//${window.location.host}/ws/media-stream?mode=dashboard`;
+  }
+  return `${PROD_BACKEND_WSS}/ws/media-stream?mode=dashboard`;
 };
 
 export const api = {

@@ -1,5 +1,5 @@
 import os
-from typing import List, Optional
+from typing import List, Optional, Union
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(default="super-secret-resort-voice-agent-token-key-32chars")
     HMAC_ALGORITHM: str = Field(default="HS256")
     WEBHOOK_SIGNATURE_VERIFY: bool = Field(default=True)
-    ALLOWED_ORIGINS: List[str] = Field(default=["*"])
+    ALLOWED_ORIGINS: Union[List[str], str] = Field(default=["https://ai-resort-voice-agent.vercel.app", "*"])
 
     # Twilio Telephony
     TWILIO_ACCOUNT_SID: str = Field(default="AC_mock_twilio_account_sid")
