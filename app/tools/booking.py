@@ -46,7 +46,8 @@ class CreateBookingInput(BaseModel):
 
 
 class SaveBookingInput(BaseModel):
-    pending_token: str = Field(min_length=10, description="The pending hold token issued by create_booking")
+    pending_token: Optional[str] = Field(default=None, description="The pending hold token issued by create_booking")
+    booking_id: Optional[str] = Field(default=None, description="The booking ID, confirmation code, or reservation UUID")
 
 
 async def create_booking(
@@ -222,10 +223,13 @@ async def create_booking(
             await session.flush()
 
         # Mirrored memory record for backwards compatibility
+        r_type_val = room.room_type if (room and hasattr(room, "room_type")) else ("bungalow" if "bungalow" in input_data.room_id else "suite" if "suite" in input_data.room_id else "villa")
         hold_record = {
             "pending_token": pending_token,
             "status": "pending",
             "room_id": input_data.room_id,
+            "room_name": room.name if room else input_data.room_id,
+            "room_type": r_type_val,
             "guest_name": input_data.guest_name,
             "guest_email": input_data.guest_email,
             "guest_phone": input_data.guest_phone,
@@ -237,7 +241,7 @@ async def create_booking(
             "add_ons": input_data.add_ons or [],
             "created_at": now_utc.isoformat(),
             "expires_at": expires_at.isoformat(),
-            "booking_id": None
+            "booking_id": str(booking.id)
         }
         HOLD_TOKENS_STORE[pending_token] = hold_record
         logger.info(
@@ -362,45 +366,144 @@ async def create_booking(
 
 
 async def save_booking(
-    pending_token: str,
+    pending_token: Optional[str] = None,
+    booking_id: Optional[str] = None,
     db_session: Optional[AsyncSession] = None
 ) -> dict:
     """
     Stage 2 of booking: Confirms a pending hold into an official reservation in PostgreSQL.
-    Idempotent: repeating save_booking with the same token returns existing confirmed booking.
+    Accepts pending_token, booking_id, or confirmation code.
+    Idempotent: repeating save_booking with the same identifier returns existing confirmed booking.
     """
-    logger.info(f"[DIAGNOSTICS] save_booking arguments: pending_token='{pending_token}'")
+    logger.info(f"[DIAGNOSTICS] save_booking arguments: pending_token='{pending_token}', booking_id='{booking_id}'")
+    raw_token = (pending_token or "").strip() if pending_token else ""
+    raw_id = (booking_id or "").strip() if booking_id else ""
+
+    if not raw_token and not raw_id:
+        return {
+            "ok": False,
+            "status": "error",
+            "error": "Missing booking identifier: pending_token or booking_id is required.",
+            "spoken_hint": "I could not locate an active hold for this reservation. Let's re-check availability."
+        }
+
     try:
-        input_data = SaveBookingInput(pending_token=pending_token)
+        input_data = SaveBookingInput(pending_token=raw_token or None, booking_id=raw_id or None)
     except Exception as val_err:
         return {
             "ok": False,
             "status": "error",
-            "error": f"Invalid token: {val_err}",
+            "error": f"Invalid token or booking_id: {val_err}",
             "spoken_hint": "I could not locate an active hold for this reservation. Let's re-check availability."
         }
 
-    token = input_data.pending_token
     caller_owns_session = (db_session is not None)
     session_ctx = None if caller_owns_session else AsyncSessionLocal()
     session = db_session if caller_owns_session else await session_ctx.__aenter__()
 
     try:
-        stmt = (
-            select(Booking)
-            .options(joinedload(Booking.customer), joinedload(Booking.room))
-            .where(Booking.pending_token == token)
-        )
-        booking = (await session.execute(stmt)).scalar_one_or_none()
+        from sqlalchemy import or_
+
+        # Prepare lookup conditions for booking_id if provided
+        id_conditions = []
+        if raw_id:
+            id_conditions.append(Booking.booking_code == raw_id)
+            try:
+                val_uuid = uuid.UUID(raw_id)
+                id_conditions.append(Booking.id == val_uuid)
+            except Exception:
+                pass
+
+        booking = None
+        if raw_token and raw_id:
+            # Both provided: query each separately to verify they refer to the exact same booking
+            booking_by_token = (await session.execute(
+                select(Booking)
+                .options(joinedload(Booking.customer), joinedload(Booking.room))
+                .where(Booking.pending_token == raw_token)
+            )).scalar_one_or_none()
+
+            booking_by_id = (await session.execute(
+                select(Booking)
+                .options(joinedload(Booking.customer), joinedload(Booking.room))
+                .where(or_(*id_conditions))
+            )).scalar_one_or_none()
+
+            if booking_by_token and booking_by_id:
+                if booking_by_token.id != booking_by_id.id:
+                    return {
+                        "ok": False,
+                        "status": "error",
+                        "error": "Mismatch: pending_token and booking_id refer to different bookings.",
+                        "spoken_hint": "I found conflicting reservation details. Let's re-check availability."
+                    }
+                booking = booking_by_token
+            elif booking_by_token or booking_by_id:
+                return {
+                    "ok": False,
+                    "status": "error",
+                    "error": "Mismatch: pending_token and booking_id do not refer to the same booking.",
+                    "spoken_hint": "I found conflicting reservation details. Let's re-check availability."
+                }
+            else:
+                booking = None
+
+        elif raw_token:
+            booking = (await session.execute(
+                select(Booking)
+                .options(joinedload(Booking.customer), joinedload(Booking.room))
+                .where(Booking.pending_token == raw_token)
+            )).scalar_one_or_none()
+
+        elif raw_id:
+            booking = (await session.execute(
+                select(Booking)
+                .options(joinedload(Booking.customer), joinedload(Booking.room))
+                .where(or_(*id_conditions))
+            )).scalar_one_or_none()
 
         if not booking:
             # Memory store fallback (for offline or uncommitted holds)
-            if token in HOLD_TOKENS_STORE:
-                hold = HOLD_TOKENS_STORE[token]
-                booking_id = f"RES-{uuid.uuid4().hex[:8].upper()}"
+            matched_hold = None
+            if raw_token and raw_id:
+                hold_by_tok = HOLD_TOKENS_STORE.get(raw_token)
+                hold_by_id = None
+                for h_tok, h_data in HOLD_TOKENS_STORE.items():
+                    if h_data.get("booking_id") == raw_id or h_data.get("booking_code") == raw_id or h_tok == raw_id:
+                        hold_by_id = h_data
+                        break
+                if hold_by_tok and hold_by_id:
+                    if hold_by_tok != hold_by_id:
+                        return {
+                            "ok": False,
+                            "status": "error",
+                            "error": "Mismatch: pending_token and booking_id refer to different holds.",
+                            "spoken_hint": "I found conflicting reservation details. Let's re-check availability."
+                        }
+                    matched_hold = hold_by_tok
+                elif hold_by_tok or hold_by_id:
+                    return {
+                        "ok": False,
+                        "status": "error",
+                        "error": "Mismatch: pending_token and booking_id do not refer to the same hold.",
+                        "spoken_hint": "I found conflicting reservation details. Let's re-check availability."
+                    }
+            elif raw_token:
+                matched_hold = HOLD_TOKENS_STORE.get(raw_token)
+            elif raw_id:
+                for h_tok, h_data in HOLD_TOKENS_STORE.items():
+                    if h_data.get("booking_id") == raw_id or h_data.get("booking_code") == raw_id or h_tok == raw_id:
+                        matched_hold = h_data
+                        break
+
+            if matched_hold:
+                hold = matched_hold
+                b_code = hold.get("booking_code") or hold.get("booking_id")
+                is_already_conf = hold.get("status") == "confirmed" and b_code and str(b_code).startswith("RES-")
+                final_booking_id = b_code if is_already_conf else f"RES-{uuid.uuid4().hex[:8].upper()}"
                 r_id = hold.get("room_id", "")
                 r_name = hold.get("room_name") or r_id
-                r_type = "bungalow" if "bungalow" in r_id else "suite" if "suite" in r_id else "villa"
+                r_type = hold.get("room_type") or ("bungalow" if "bungalow" in r_id else "suite" if "suite" in r_id else "villa")
                 g_name = hold.get("guest_name", "Valued Guest")
                 g_email = hold.get("guest_email", "")
                 t_price = float(hold.get("total_price", 0.0))
@@ -410,12 +513,13 @@ async def save_booking(
                 now_str = utcnow().isoformat()
 
                 hold["status"] = "confirmed"
-                hold["booking_id"] = booking_id
+                hold["booking_id"] = final_booking_id
+                hold["booking_code"] = final_booking_id
 
-                BOOKINGS_STORE[booking_id] = {
-                    "booking_id": booking_id,
-                    "booking_code": booking_id,
-                    "confirmation_number": booking_id,
+                BOOKINGS_STORE[final_booking_id] = {
+                    "booking_id": final_booking_id,
+                    "booking_code": final_booking_id,
+                    "confirmation_number": final_booking_id,
                     "guest_name": g_name,
                     "guest_email": g_email,
                     "room_id": r_id,
@@ -431,16 +535,18 @@ async def save_booking(
                     "created_at": now_str
                 }
                 spoken_hint = (
-                    f"Wonderful! Your reservation is officially confirmed! Your confirmation number is {booking_id}. "
+                    f"Your booking {final_booking_id} is already confirmed for {g_name}."
+                    if is_already_conf else
+                    f"Wonderful! Your reservation is officially confirmed! Your confirmation number is {final_booking_id}. "
                     f"I can email your itinerary and receipt now. Would you like me to send that to {g_email}?"
                 )
                 return {
                     "ok": True,
                     "status": "confirmed",
-                    "booking_id": booking_id,
-                    "booking_code": booking_id,
-                    "confirmation_number": booking_id,
-                    "reservation_id": booking_id,
+                    "booking_id": final_booking_id,
+                    "booking_code": final_booking_id,
+                    "confirmation_number": final_booking_id,
+                    "reservation_id": final_booking_id,
                     "guest_name": g_name,
                     "guest_email": g_email,
                     "room_id": r_id,
@@ -456,10 +562,11 @@ async def save_booking(
                     "spoken_hint": spoken_hint
                 }
 
+            desc = f"token '{raw_token}' and id '{raw_id}'" if (raw_token and raw_id) else f"'{raw_token or raw_id}'"
             return {
                 "ok": False,
                 "status": "error",
-                "error": "Hold token not found or expired.",
+                "error": f"Hold token not found or expired: {desc}",
                 "spoken_hint": "I could not locate an active hold for this reservation. Let's re-check availability."
             }
 
@@ -467,6 +574,8 @@ async def save_booking(
         room_type = booking.room.room_type if (booking.room and hasattr(booking.room, "room_type")) else (
             "bungalow" if "bungalow" in booking.room_id else "suite" if "suite" in booking.room_id else "villa"
         )
+
+        now_utc = utcnow()
 
         # Idempotent check: if already confirmed, return existing confirmation
         if booking.status == "confirmed" and booking.booking_code:
@@ -495,7 +604,6 @@ async def save_booking(
             }
 
         # Validate hold expiration
-        now_utc = utcnow()
         if booking.hold_expires_at:
             exp_tz = booking.hold_expires_at if booking.hold_expires_at.tzinfo else booking.hold_expires_at.replace(tzinfo=timezone.utc)
             if now_utc > exp_tz:
@@ -544,6 +652,11 @@ async def save_booking(
             "status": "confirmed",
             "created_at": booking.created_at.isoformat() if booking.created_at else now_utc.isoformat()
         }
+        if booking.pending_token and booking.pending_token in HOLD_TOKENS_STORE:
+            HOLD_TOKENS_STORE[booking.pending_token]["status"] = "confirmed"
+            HOLD_TOKENS_STORE[booking.pending_token]["booking_id"] = booking_id
+            HOLD_TOKENS_STORE[booking.pending_token]["booking_code"] = booking_id
+
         logger.info(
             f"[DIAGNOSTICS] save_booking result: booking_id='{booking_id}', "
             f"guest='{guest_name}', room='{room_name}', status='confirmed'"
@@ -590,12 +703,13 @@ async def save_booking(
         return {
             "ok": False,
             "status": "error",
-            "error": "Reservation system error during confirmation.",
+            "error": f"Reservation system error during confirmation: {type(exc).__name__}: {str(exc)}",
             "spoken_hint": "I apologize, our reservation system encountered an issue while finalizing your booking."
         }
     finally:
         if not caller_owns_session and session_ctx:
             await session_ctx.__aexit__(None, None, None)
+
 
 
 async def get_booking_details(

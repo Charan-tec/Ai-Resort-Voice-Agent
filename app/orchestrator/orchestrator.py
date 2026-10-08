@@ -330,6 +330,18 @@ class VoiceAgentOrchestrator:
                                     )
                                     arguments["total_price"] = calc_res.get("total_price", 1000.0)
 
+                        if tool_name == "save_booking":
+                            if not arguments.get("pending_token") and self.session.active_pending_token:
+                                arguments["pending_token"] = self.session.active_pending_token
+                            if not arguments.get("booking_id") and getattr(self.session, "active_booking_id", None):
+                                arguments["booking_id"] = self.session.active_booking_id
+
+                        if tool_name == "send_confirmation_email":
+                            if not arguments.get("booking_id"):
+                                arguments["booking_id"] = self.session.confirmed_booking_id or getattr(self.session, "active_booking_id", None) or self.session.active_pending_token
+                            if not arguments.get("customer_email"):
+                                arguments["customer_email"] = self.session.guest_email or "guest@azureparadise-resort.com"
+
                         tool_result = await tool_registry.execute_tool(tool_name, arguments, db_session=turn_db_session)
                         last_tool_result = tool_result
                         self._turn_last_tool_name = tool_name
