@@ -54,6 +54,34 @@ class Settings(BaseSettings):
     TTS_MODEL: str = Field(default="eleven_flash_v2_5")
     TTS_VOICE_ID: str = Field(default="21m00Tcm4TlvDq8ikWAM")  # Rachel / Luxury concierge voice
 
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def normalize_database_url(cls, v: str) -> str:
+        if isinstance(v, str):
+            clean = v.strip()
+            if clean.startswith("postgres://"):
+                return "postgresql+asyncpg://" + clean[len("postgres://"):]
+            if clean.startswith("postgresql://"):
+                return "postgresql+asyncpg://" + clean[len("postgresql://"):]
+            if clean.startswith("postgresql+psycopg://"):
+                return "postgresql+asyncpg://" + clean[len("postgresql+psycopg://"):]
+            if clean.startswith("postgresql+psycopg2://"):
+                return "postgresql+asyncpg://" + clean[len("postgresql+psycopg2://"):]
+            return clean
+        return v
+
+    @field_validator("DATABASE_URL_SYNC", mode="before")
+    @classmethod
+    def normalize_database_url_sync(cls, v: str) -> str:
+        if isinstance(v, str):
+            clean = v.strip()
+            if clean.startswith("postgres://"):
+                return "postgresql://" + clean[len("postgres://"):]
+            if clean.startswith("postgresql+asyncpg://"):
+                return "postgresql://" + clean[len("postgresql+asyncpg://"):]
+            return clean
+        return v
+
     @field_validator("LLM_PROVIDER", mode="before")
     @classmethod
     def normalize_llm_provider(cls, v: str) -> str:

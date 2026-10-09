@@ -19,8 +19,23 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
+def get_normalized_database_url() -> str:
+    raw_url = os.getenv("DATABASE_URL") or settings.DATABASE_URL
+    clean = (raw_url or "").strip()
+    if clean.startswith("postgres://"):
+        return "postgresql+asyncpg://" + clean[len("postgres://"):]
+    if clean.startswith("postgresql://"):
+        return "postgresql+asyncpg://" + clean[len("postgresql://"):]
+    if clean.startswith("postgresql+psycopg://"):
+        return "postgresql+asyncpg://" + clean[len("postgresql+psycopg://"):]
+    if clean.startswith("postgresql+psycopg2://"):
+        return "postgresql+asyncpg://" + clean[len("postgresql+psycopg2://"):]
+    return clean
+
 def run_migrations_offline() -> None:
-    url = settings.DATABASE_URL
+    url = get_normalized_database_url()
+    if url.startswith("postgresql+asyncpg://"):
+        url = "postgresql://" + url[len("postgresql+asyncpg://"):]
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -41,7 +56,7 @@ def do_run_migrations(connection):
 
 async def run_async_migrations() -> None:
     configuration = config.get_section(config.config_ini_section) or {}
-    configuration["sqlalchemy.url"] = settings.DATABASE_URL
+    configuration["sqlalchemy.url"] = get_normalized_database_url()
 
     connectable = async_engine_from_config(
         configuration,
